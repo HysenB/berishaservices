@@ -1,4 +1,4 @@
-package com.hysenberisha.fraud;
+package com.hysenberisha.clients.fraud;
 
 public record FraudCheckResponse(Boolean isFraudster) {
 }
