@@ -1,5 +1,6 @@
 package com.hysenberisha.customer;
 
+import com.hysenberisha.amqp.RabbitMQMessageProducer;
 import com.hysenberisha.clients.fraud.FraudCheckResponse;
 import com.hysenberisha.clients.fraud.FraudClient;
 import com.hysenberisha.clients.notification.NotificationClient;
@@ -15,7 +16,9 @@ public class CustomerService {
     private final CustomerRepository customerRepository;
 //    private final RestTemplate restTemplate;
     private final FraudClient fraudClient;
-    private final NotificationClient notificationClient;
+//    private final NotificationClient notificationClient;
+
+    private final RabbitMQMessageProducer rabbitMQMessageProducer;
     public void registerCustomer(CustomerRegistrationRequest request) {
         Customer customer = Customer.builder()
                 .firstName(request.firstName())
@@ -40,15 +43,28 @@ public class CustomerService {
         if(fraudCheckResponse.isFraudster()){
             throw new IllegalStateException("Fraudster");
         }
-        //  todo: make it asnyc i.e add to queue
-        notificationClient.sendNotification(
-                new NotificationRequest(
-                        customer.getId(),
-                        customer.getEmail(),
-                        String.format("Hi %s, welcome to Hysenberisha...",
-                                customer.getFirstName())
-                )
+        //  todo: make it asnyc i.e add to queue (job done)
+        NotificationRequest notificationRequest =  new NotificationRequest(
+                customer.getId(),
+                customer.getEmail(),
+                String.format("Hi %s, welcome to Hysenberisha...",
+                        customer.getFirstName())
         );
+        rabbitMQMessageProducer.publish(
+                notificationRequest,
+                "internal.exchange",
+                "internal.notification.routing-key"
+        );
+
+
+//        notificationClient.sendNotification(
+//                new NotificationRequest(
+//                        customer.getId(),
+//                        customer.getEmail(),
+//                        String.format("Hi %s, welcome to Hysenberisha...",
+//                                customer.getFirstName())
+//                )
+//        );
 
     }
 }
